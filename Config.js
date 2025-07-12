@@ -3,5 +3,5 @@
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzFHZHSkSEsTElSf4-ZvUbDAIohlosLt9M7xnk2iYgaOZocuit_pkG4tMUP7srEOovW/exec';
 //LIFF_ID
     const LIFF_ID = '2007656229-B9EAzV8v'; // LIFF ID Checkin
-    const LIFF_HISTORY = 'XXX'; // LIFF ID history
-    const LIFF_REGISTER = 'XX'; // LIFF ID register
+    const LIFF_HISTORY = '2007656229-8nnlMGYV'; // LIFF ID history
+    const LIFF_REGISTER = '2007656229-kRNMD5gB'; // LIFF ID register
