@@ -72,18 +72,17 @@
         <!-- แถวบน: เข้างาน (ซ้าย) และ ออกงาน (ขวา) -->
         <div class="flex space-x-2">
           <!-- ปุ่ม เข้างาน -->
-          <div class="w-full flex items-center"> 
-  <input type="radio" id="radio-three" name="switch-job" value="เข้างาน" class="hidden"  />
-  <label for="radio-three"
-    class="cursor-pointer border border-gray-300 px-4 py-3 rounded-lg w-full flex items-center justify-center bg-green-100 border-green-500 text-green-700">
-    <!-- จุดสีเขียว -->
-    <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-    เข้างาน
-  </label>
-</div>
-
+          <div class="w-1/2 flex items-center">
+            <input type="radio" id="radio-three" name="switch-job" value="เข้างาน" class="hidden" />
+            <label for="radio-three"
+              class="cursor-pointer border border-gray-300 px-4 py-3 rounded-lg w-full flex items-center justify-center">
+              <!-- จุดสีเขียว -->
+              <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+              เข้างาน
+            </label>
+          </div>
           <!-- ปุ่ม ออกงาน -->
-          <div class="w-1/2 flex items-center hidden">
+          <div class="w-1/2 flex items-center">
             <input type="radio" id="radio-five" name="switch-job" value="ออกงาน" class="hidden" />
             <label for="radio-five"
               class="cursor-pointer border border-gray-300 px-4 py-3 rounded-lg w-full flex items-center justify-center">
@@ -94,7 +93,7 @@
           </div>
         </div>
         <!-- แถวล่าง: ปุ่ม ระหว่างวัน -->
-        <div class="flex pt-2 hidden">
+        <div class="flex pt-2">
           <input type="radio" id="radio-four" name="switch-job" value="ระหว่างวัน" class="hidden" />
           <label for="radio-four"
             class="cursor-pointer border border-gray-300 py-3 rounded-lg w-full text-center">
