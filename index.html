@@ -343,7 +343,7 @@
                 icon: "success",
                 confirmButtonText: "ปิด",
               }).then(() => {
-                sendFlexMessage(data.fileUrl, data.mapsLink);
+                sendFlexMessage(data.fileUrl, data.mapsLink, data.workStatus, data.minutes);
               });
             })
             .catch((error) => {
@@ -363,9 +363,7 @@
     }
 
     // ฟังก์ชันช่วยสร้างแถวข้อมูลแบบ label-value ให้โค้ดสั้นลง อ่านง่ายขึ้น
-    function flexRow(label, value, color, size) {
-      color = color || "#000000";
-      size = size || "sm";
+    function flexRow(label, value, color = "#000000", size = "sm") {
       return {
         type: "box",
         layout: "baseline",
@@ -376,14 +374,19 @@
       };
     }
 
-    async function sendFlexMessage(imageUrl, mapsLink) {
+    async function sendFlexMessage(imageUrl, mapsLink, workStatus, minutesLate) {
       const isCheckIn = jobInput.value === "เข้างาน";
       const headerColor = isCheckIn ? "#0D9608" : "#EF2F14";
       const headerBg = isCheckIn ? "#E7F8E9" : "#FDEDEC";
+      
+      // สำหรับสตาตัส: สาย/ตรงเวลา
+      const statusColor = workStatus === "สาย" ? "#EF2F14" : "#0D9608";
+      const statusBg = workStatus === "สาย" ? "#FDEDEC" : "#E7F8E9";
+      const statusText = workStatus === "สาย" ? `สาย ${minutesLate} นาที` : "ตรงเวลา";
 
       const flexMessage = {
         type: "flex",
-        altText: `ลงเวลา - ${jobInput.value}`,
+        altText: `บันทึกเวลางาน - ${jobInput.value}`,
         contents: {
           type: "bubble",
           size: "mega",
@@ -406,7 +409,7 @@
                 contents: [
                   {
                     type: "text",
-                    text: "ลงเวลาปฎิบัติงาน",
+                    text: "บันทึกเวลางาน",
                     weight: "bold",
                     size: "lg",
                     color: "#1E293B",
@@ -426,6 +429,25 @@
                         size: "sm",
                         weight: "bold",
                         color: headerColor,
+                        align: "center",
+                      },
+                    ],
+                  },
+                  {
+                    type: "box",
+                    layout: "vertical",
+                    backgroundColor: statusBg,
+                    cornerRadius: "20px",
+                    paddingAll: "6px",
+                    paddingStart: "12px",
+                    paddingEnd: "12px",
+                    contents: [
+                      {
+                        type: "text",
+                        text: statusText,
+                        size: "sm",
+                        weight: "bold",
+                        color: statusColor,
                         align: "center",
                       },
                     ],
