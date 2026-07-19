@@ -55,7 +55,7 @@
         <input type="hidden" id="userId" name="userId" /><input type="hidden" id="columnAData" name="columnAData" />
       </div>
 
-      <!-- **แก้ไข 1: ทำให้เหลือปุ่มเข้างานปุ่มเดียวและแสดงผลเหมือนถูกเลือกแล้ว** -->
+      <!-- ปุ่มเข้างานปุ่มเดียวและแสดงผลเหมือนถูกเลือกแล้ว -->
       <div class="my-6 space-y-4">
         <div
           class="w-full flex items-center bg-slate-800 text-white border border-gray-300 px-4 py-3 rounded-lg justify-center">
@@ -138,19 +138,18 @@
       </div>
     </div>
   </div>  
-  <script src=" Config.js"></script>
+  <script src="Config.js"></script>
   <script>
     const Latitude = 16.808153818478925;  //กำหนดพื้นที่
     const Longitude = 100.26419117954985;  //กำหนดพื้นที่
     const Range = 6000000;  //ระยะเป็นเมตร
 
-    // **แก้ไข 2: ตั้งค่า jobInput เป็น 'เข้างาน' เมื่อโหลด**
+    // ตั้งค่า jobInput เป็น 'เข้างาน' เมื่อโหลด
     window.onload = async function () {
       document.getElementById("jobInput").value = "เข้างาน";
       await initializeLiff();
     };
 
-    // Script ที่เหลือทั้งหมดเหมือนเดิม
     async function initializeLiff() {
       try {
         await liff.init({ liffId: `${LIFF_ID}` });
@@ -213,6 +212,7 @@
     const url = `${WEB_APP_URL}`;
     const columnBData = document.querySelector("#columnBData");
     const columnCData = document.querySelector("#columnCData");
+    const columnDData = document.querySelector("#columnDData");
     const jobInput = document.querySelector("#jobInput");
     const noteInput = document.querySelector("#noteInput");
     const todayInput = document.querySelector("#todayInput");
@@ -331,16 +331,19 @@
             user: userId.value,
           };
           fetch(url, { method: "POST", body: JSON.stringify(obj) })
-            .then((response) => response.text())
+            .then((response) => response.json())
             .then((data) => {
               Swal.close();
+              if (data.status !== "success") {
+                throw new Error(data.message || "Unknown error");
+              }
               Swal.fire({
                 title: "สำเร็จ!",
                 text: "บันทึกข้อมูลของคุณเรียบร้อย!",
                 icon: "success",
                 confirmButtonText: "ปิด",
               }).then(() => {
-                sendFlexMessage();
+                sendFlexMessage(data.fileUrl, data.mapsLink);
               });
             })
             .catch((error) => {
@@ -358,18 +361,44 @@
         }
       });
     }
-    async function sendFlexMessage() {
-      let jobColor = "#0D9608FF";
+
+    // ฟังก์ชันช่วยสร้างแถวข้อมูลแบบ label-value ให้โค้ดสั้นลง อ่านง่ายขึ้น
+    function flexRow(label, value, color, size) {
+      color = color || "#000000";
+      size = size || "sm";
+      return {
+        type: "box",
+        layout: "baseline",
+        contents: [
+          { type: "text", text: label, weight: "bold", size: "sm", flex: 2, color: "#334155" },
+          { type: "text", text: value || "-", size: size, color: color, align: "end", flex: 3, wrap: true },
+        ],
+      };
+    }
+
+    async function sendFlexMessage(imageUrl, mapsLink) {
+      const isCheckIn = jobInput.value === "เข้างาน";
+      const headerColor = isCheckIn ? "#0D9608" : "#EF2F14";
+      const headerBg = isCheckIn ? "#E7F8E9" : "#FDEDEC";
+
       const flexMessage = {
         type: "flex",
-        altText: "จดบันทึกเวลางาน",
+        altText: `บันทึกเวลางาน - ${jobInput.value}`,
         contents: {
           type: "bubble",
-          direction: "ltr",
+          size: "mega",
+          hero: {
+            type: "image",
+            url: imageUrl,
+            size: "full",
+            aspectRatio: "20:15",
+            aspectMode: "cover",
+          },
           body: {
             type: "box",
             layout: "vertical",
             spacing: "md",
+            paddingAll: "20px",
             contents: [
               {
                 type: "box",
@@ -379,146 +408,94 @@
                     type: "text",
                     text: "บันทึกเวลางาน",
                     weight: "bold",
-                    size: "md",
-                    align: "start",
-                    margin: "sm",
-                    contents: [],
+                    size: "lg",
+                    color: "#1E293B",
                   },
                   {
-                    type: "text",
-                    text: `${jobInput.value}`,
-                    weight: "bold",
-                    size: "md",
-                    color: jobColor,
-                    align: "end",
-                    contents: [],
+                    type: "box",
+                    layout: "vertical",
+                    backgroundColor: headerBg,
+                    cornerRadius: "20px",
+                    paddingAll: "6px",
+                    paddingStart: "12px",
+                    paddingEnd: "12px",
+                    contents: [
+                      {
+                        type: "text",
+                        text: jobInput.value,
+                        size: "sm",
+                        weight: "bold",
+                        color: headerColor,
+                        align: "center",
+                      },
+                    ],
                   },
                 ],
               },
-              { type: "separator" },
+              { type: "separator", margin: "md" },
               {
                 type: "box",
                 layout: "vertical",
+                margin: "md",
                 spacing: "sm",
                 contents: [
-                  {
-                    type: "box",
-                    layout: "baseline",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "ชื่อนักศึกษา",
-                        weight: "bold",
-                        size: "sm",
-                        margin: "sm",
-                        contents: [],
-                      },
-                      {
-                        type: "text",
-                        text: `${columnBData.value}`,
-                        size: "sm",
-                        color: "#000000FF",
-                        align: "end",
-                        contents: [],
-                      },
-                    ],
-                  },
-                  {
-                    type: "box",
-                    layout: "baseline",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "ชั้นปี",
-                        weight: "bold",
-                        size: "sm",
-                        flex: 0,
-                        margin: "sm",
-                        contents: [],
-                      },
-                      {
-                        type: "text",
-                        text: `${columnCData.value}`,
-                        size: "sm",
-                        color: "#000000FF",
-                        align: "end",
-                        contents: [],
-                      },
-                    ],
-                  },
+                  flexRow("👤 ชื่อ", columnBData.value),
+                  flexRow("🆔 รหัสนักศึกษา", columnCData.value),
+                  flexRow("🎓 ชั้นปี", columnDData.value),
                 ],
               },
-              { type: "separator" },
+              { type: "separator", margin: "md" },
               {
                 type: "box",
                 layout: "vertical",
+                margin: "md",
+                spacing: "sm",
                 contents: [
-                  {
-                    type: "box",
-                    layout: "baseline",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "วันที่",
-                        weight: "bold",
-                        contents: [],
-                      },
-                      {
-                        type: "text",
-                        text: `${getFormattedDate()}`,
-                        weight: "bold",
-                        align: "end",
-                        contents: [],
-                      },
-                    ],
-                  },
-                  {
-                    type: "box",
-                    layout: "baseline",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "เวลา",
-                        weight: "bold",
-                        contents: [],
-                      },
-                      {
-                        type: "text",
-                        text: `${currentTime.value}`,
-                        weight: "bold",
-                        size: "xl",
-                        color: "#EF2F14FF",
-                        align: "end",
-                        contents: [],
-                      },
-                    ],
-                  },
+                  flexRow("📅 วันที่", getFormattedDate()),
+                  flexRow("🕒 เวลา", currentTime.value, "#EF2F14", "xl"),
                 ],
               },
-              { type: "separator" },
+              { type: "separator", margin: "md" },
               {
                 type: "box",
                 layout: "vertical",
+                margin: "md",
                 spacing: "xs",
-                margin: "sm",
                 contents: [
                   {
                     type: "text",
-                    text: "สถานที่",
+                    text: "📍 สถานที่",
                     weight: "bold",
                     size: "sm",
-                    margin: "md",
-                    contents: [],
+                    color: "#1E293B",
                   },
                   {
                     type: "text",
-                    text: fullAddressInput.value
-                      ? `${fullAddressInput.value}`
-                      : "ข้อมูลไม่พร้อมแสดง แต่เราเก็บพิกัดของคุณเรียบร้อย",
+                    text: fullAddressInput.value || "ข้อมูลไม่พร้อมแสดง แต่เราเก็บพิกัดของคุณเรียบร้อย",
                     wrap: true,
-                    contents: [],
+                    size: "sm",
+                    color: "#64748B",
                   },
                 ],
+              },
+            ],
+          },
+          footer: {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            paddingAll: "16px",
+            contents: [
+              {
+                type: "button",
+                style: "primary",
+                color: "#1E293B",
+                height: "sm",
+                action: {
+                  type: "uri",
+                  label: "🗺️ ดูตำแหน่งบนแผนที่",
+                  uri: mapsLink,
+                },
               },
             ],
           },
@@ -527,6 +504,7 @@
       await liff.sendMessages([flexMessage]);
       liff.closeWindow();
     }
+
     function updateDateTime() {
       const dateElement = document.getElementById("date");
       const timeElement = document.getElementById("time");
@@ -551,9 +529,6 @@
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
-
-    // **แก้ไข 3: ลบ Event Listener ที่ไม่จำเป็นออกไป**
-    // document.querySelectorAll('input[name="switch-job"]').forEach... (ส่วนนี้ถูกลบ)
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
       const R = 6371e3;
