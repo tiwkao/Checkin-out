@@ -376,20 +376,24 @@
 
     async function sendFlexMessage(imageUrl, mapsLink, workStatus, minutesLate) {
       const isCheckIn = jobInput.value === "เข้างาน";
-      const headerColor = isCheckIn ? "#0D9608" : "#EF2F14";
-      const headerBg = isCheckIn ? "#E7F8E9" : "#FDEDEC";
+      const headerColor = isCheckIn ? "#10B981" : "#EC4899";  // Green for check-in, Pink for check-out
+      const headerBg = isCheckIn ? "#D1FAE5" : "#FCE7F3";
       
-      // สำหรับสตาตัส: สาย/ตรงเวลา
-      const statusColor = workStatus === "สาย" ? "#EF2F14" : "#0D9608";
-      const statusBg = workStatus === "สาย" ? "#FDEDEC" : "#E7F8E9";
-      const statusText = workStatus === "สาย" ? `สาย ${minutesLate} นาที` : "ตรงเวลา";
+      // สำหรับสตาตัส: สาย/ตรงเวลา - ใช้สีชมพูสำหรับสาย
+      const statusColor = workStatus === "สาย" ? "#DB2777" : "#10B981";
+      const statusBg = workStatus === "สาย" ? "#FDF2F8" : "#D1FAE5";
+      const statusText = workStatus === "สาย" ? `⚠️ สาย ${minutesLate} นาที` : "✓ ตรงเวลา";
+      const statusIcon = workStatus === "สาย" ? "🔴" : "🟢";
 
       const flexMessage = {
         type: "flex",
-        altText: `บันทึกเวลางาน - ${jobInput.value}`,
+        altText: `บันทึกเวลางาน - ${jobInput.value} (${statusText})`,
         contents: {
           type: "bubble",
           size: "mega",
+          styles: {
+            body: { separatorLineColor: "#E5E7EB" }
+          },
           hero: {
             type: "image",
             url: imageUrl,
@@ -400,103 +404,215 @@
           body: {
             type: "box",
             layout: "vertical",
-            spacing: "md",
+            spacing: "lg",
             paddingAll: "20px",
             contents: [
               {
                 type: "box",
-                layout: "horizontal",
+                layout: "vertical",
+                backgroundColor: "#FFF8FC",
+                cornerRadius: "12px",
+                paddingAll: "16px",
                 contents: [
                   {
-                    type: "text",
-                    text: "บันทึกเวลางาน",
-                    weight: "bold",
-                    size: "lg",
-                    color: "#1E293B",
-                  },
-                  {
                     type: "box",
-                    layout: "vertical",
-                    backgroundColor: headerBg,
-                    cornerRadius: "20px",
-                    paddingAll: "6px",
-                    paddingStart: "12px",
-                    paddingEnd: "12px",
+                    layout: "horizontal",
+                    spacing: "md",
                     contents: [
                       {
-                        type: "text",
-                        text: jobInput.value,
-                        size: "sm",
-                        weight: "bold",
-                        color: headerColor,
-                        align: "center",
+                        type: "box",
+                        layout: "vertical",
+                        flex: 4,
+                        contents: [
+                          {
+                            type: "text",
+                            text: "บันทึกเวลางาน",
+                            weight: "bold",
+                            size: "xl",
+                            color: "#111827",
+                          },
+                          {
+                            type: "text",
+                            text: getFormattedDate(),
+                            size: "xs",
+                            color: "#9CA3AF",
+                            margin: "xs",
+                          },
+                        ],
+                      },
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        flex: 3,
+                        contents: [
+                          {
+                            type: "box",
+                            layout: "vertical",
+                            backgroundColor: headerBg,
+                            cornerRadius: "8px",
+                            paddingAll: "8px",
+                            paddingStart: "12px",
+                            paddingEnd: "12px",
+                            contents: [
+                              {
+                                type: "text",
+                                text: jobInput.value,
+                                size: "xs",
+                                weight: "bold",
+                                color: headerColor,
+                                align: "center",
+                              },
+                            ],
+                          },
+                        ],
                       },
                     ],
                   },
                   {
+                    type: "separator",
+                    margin: "md",
+                    color: "#E5E7EB",
+                  },
+                  {
                     type: "box",
-                    layout: "vertical",
-                    backgroundColor: statusBg,
-                    cornerRadius: "20px",
-                    paddingAll: "6px",
-                    paddingStart: "12px",
-                    paddingEnd: "12px",
+                    layout: "horizontal",
+                    spacing: "md",
+                    margin: "md",
                     contents: [
                       {
                         type: "text",
-                        text: statusText,
-                        size: "sm",
-                        weight: "bold",
-                        color: statusColor,
-                        align: "center",
+                        text: statusIcon,
+                        size: "lg",
+                        flex: 0,
+                      },
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        flex: 5,
+                        contents: [
+                          {
+                            type: "text",
+                            text: statusText,
+                            size: "sm",
+                            weight: "bold",
+                            color: statusColor,
+                          },
+                        ],
+                      },
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        flex: 0,
+                        cornerRadius: "20px",
+                        backgroundColor: statusBg,
+                        paddingAll: "4px",
+                        paddingStart: "8px",
+                        paddingEnd: "8px",
+                        contents: [
+                          {
+                            type: "text",
+                            text: statusText.includes("สาย") ? `${minutesLate}'` : "OK",
+                            size: "xs",
+                            weight: "bold",
+                            color: statusColor,
+                            align: "center",
+                          },
+                        ],
                       },
                     ],
                   },
                 ],
               },
-              { type: "separator", margin: "md" },
               {
                 type: "box",
                 layout: "vertical",
-                margin: "md",
+                margin: "lg",
                 spacing: "sm",
-                contents: [
-                  flexRow("👤 ชื่อ", columnBData.value),
-                  flexRow("🆔 รหัสนักศึกษา", columnCData.value),
-                  flexRow("🎓 ชั้นปี", columnDData.value),
-                ],
-              },
-              { type: "separator", margin: "md" },
-              {
-                type: "box",
-                layout: "vertical",
-                margin: "md",
-                spacing: "sm",
-                contents: [
-                  flexRow("📅 วันที่", getFormattedDate()),
-                  flexRow("🕒 เวลา", currentTime.value, "#EF2F14", "xl"),
-                ],
-              },
-              { type: "separator", margin: "md" },
-              {
-                type: "box",
-                layout: "vertical",
-                margin: "md",
-                spacing: "xs",
                 contents: [
                   {
-                    type: "text",
-                    text: "📍 สถานที่",
-                    weight: "bold",
-                    size: "sm",
-                    color: "#1E293B",
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "sm",
+                    contents: [
+                      { type: "text", text: "👤", size: "sm", flex: 0 },
+                      { type: "text", text: "ชื่อ", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
+                      { type: "text", text: columnBData.value, size: "sm", color: "#111827", align: "end", flex: 3, wrap: true },
+                    ],
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "sm",
+                    contents: [
+                      { type: "text", text: "🆔", size: "sm", flex: 0 },
+                      { type: "text", text: "รหัส", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
+                      { type: "text", text: columnCData.value, size: "sm", color: "#111827", align: "end", flex: 3 },
+                    ],
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "sm",
+                    contents: [
+                      { type: "text", text: "🎓", size: "sm", flex: 0 },
+                      { type: "text", text: "ชั้นปี", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
+                      { type: "text", text: columnDData.value, size: "sm", color: "#111827", align: "end", flex: 3 },
+                    ],
+                  },
+                ],
+              },
+              { type: "separator", margin: "lg", color: "#E5E7EB" },
+              {
+                type: "box",
+                layout: "vertical",
+                margin: "lg",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "sm",
+                    contents: [
+                      { type: "text", text: "📅", size: "sm", flex: 0 },
+                      { type: "text", text: "วันที่", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
+                      { type: "text", text: getFormattedDate(), size: "sm", color: "#111827", align: "end", flex: 3 },
+                    ],
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "sm",
+                    contents: [
+                      { type: "text", text: "🕐", size: "sm", flex: 0 },
+                      { type: "text", text: "เวลา", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
+                      { type: "text", text: currentTime.value, size: "sm", weight: "bold", color: "#DB2777", align: "end", flex: 3 },
+                    ],
+                  },
+                ],
+              },
+              { type: "separator", margin: "lg", color: "#E5E7EB" },
+              {
+                type: "box",
+                layout: "vertical",
+                margin: "lg",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "sm",
+                    contents: [
+                      { type: "text", text: "📍", size: "sm", flex: 0 },
+                      { type: "text", text: "สถานที่", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
+                    ],
                   },
                   {
                     type: "text",
                     text: fullAddressInput.value || "ข้อมูลไม่พร้อมแสดง แต่เราเก็บพิกัดของคุณเรียบร้อย",
                     wrap: true,
-                    size: "sm",
-                    color: "#64748B",
+                    size: "xs",
+                    color: "#9CA3AF",
+                    margin: "sm",
                   },
                 ],
               },
