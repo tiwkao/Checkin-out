@@ -147,19 +147,7 @@
     // ตั้งค่า jobInput เป็น 'เข้างาน' เมื่อโหลด
     window.onload = async function () {
       document.getElementById("jobInput").value = "เข้างาน";
-      try {
-        await initializeLiff();
-      } catch (error) {
-        console.error("❌ Initialization error:", error);
-        Swal.fire({
-          icon: 'error',
-          title: 'เกิดข้อผิดพลาด',
-          text: 'ไม่สามารถเชื่อมต่อได้ กรุณารีโหลดหน้า',
-          confirmButtonText: 'รีโหลด'
-        }).then(() => {
-          location.reload();
-        });
-      }
+      await initializeLiff();
     };
 
     async function initializeLiff() {
@@ -243,22 +231,8 @@
       let stream;
       let currentFacingMode = "user";
       function startCamera() {
-        // ปิดกล้องที่เปิดอยู่ก่อน
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop());
-        }
-        
-        const constraints = {
-          video: {
-            facingMode: currentFacingMode,
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
-        };
-        
         navigator.mediaDevices
-          .getUserMedia(constraints)
+          .getUserMedia({ video: { facingMode: currentFacingMode } })
           .then(function (videoStream) {
             stream = videoStream;
             video.srcObject = videoStream;
@@ -266,39 +240,10 @@
             switchCameraBtn.disabled = false;
             video.style.display = "block";
             previewImage.style.display = "none";
-            console.log("✓ Camera started successfully");
           })
           .catch(function (error) {
-            console.error("Camera Error:", error.name, error.message);
-            
-            let errorMsg = "ไม่สามารถเข้าถึงกล้องได้";
-            if (error.name === "NotReadableError") {
-              errorMsg = "กล้องถูกใช้งานโดยแอปพลิเคชันอื่น กรุณาปิดแอปอื่นที่ใช้กล้องแล้วลองใหม่";
-            } else if (error.name === "NotAllowedError") {
-              errorMsg = "กรุณาอนุญาตให้ใช้กล้อง";
-            } else if (error.name === "NotFoundError") {
-              errorMsg = "ไม่พบอุปกรณ์กล้องบนเครื่องนี้";
-            }
-            
-            alert(errorMsg);
-            
-            // ให้ผู้ใช้ข้ามขั้นตอนนี้ได้
-            Swal.fire({
-              icon: 'warning',
-              title: 'ปัญหากล้อง',
-              text: errorMsg,
-              showCancelButton: true,
-              confirmButtonText: 'ลองใหม่',
-              cancelButtonText: 'ข้าม (ใช้รูปเดิม)'
-            }).then((result) => {
-              if (!result.isConfirmed) {
-                // ใช้รูปเดิม
-                previewImage.src = "https://via.placeholder.com/400x300?text=No+Photo";
-                previewImage.style.display = "block";
-                captureBtn.disabled = true;
-                nextStep();
-              }
-            });
+            console.error("Error accessing the camera: ", error);
+            alert("ไม่สามารถเข้าถึงกล้องได้ กรุณาตรวจสอบการอนุญาต.");
           });
       }
       function capturePhoto() {
@@ -398,7 +343,7 @@
                 icon: "success",
                 confirmButtonText: "ปิด",
               }).then(() => {
-                sendFlexMessage(data.fileUrl, data.mapsLink, data.workStatus, data.minutes);
+                sendFlexMessage(data.fileUrl, data.mapsLink);
               });
             })
             .catch((error) => {
@@ -418,7 +363,9 @@
     }
 
     // ฟังก์ชันช่วยสร้างแถวข้อมูลแบบ label-value ให้โค้ดสั้นลง อ่านง่ายขึ้น
-    function flexRow(label, value, color = "#000000", size = "sm") {
+    function flexRow(label, value, color, size) {
+      color = color || "#000000";
+      size = size || "sm";
       return {
         type: "box",
         layout: "baseline",
@@ -429,26 +376,17 @@
       };
     }
 
-    async function sendFlexMessage(imageUrl, mapsLink, workStatus, minutesLate) {
+    async function sendFlexMessage(imageUrl, mapsLink) {
       const isCheckIn = jobInput.value === "เข้างาน";
-      const headerColor = isCheckIn ? "#10B981" : "#EC4899";  // Green for check-in, Pink for check-out
-      const headerBg = isCheckIn ? "#D1FAE5" : "#FCE7F3";
-      
-      // สำหรับสตาตัส: สาย/ตรงเวลา - ใช้สีชมพูสำหรับสาย
-      const statusColor = workStatus === "สาย" ? "#DB2777" : "#10B981";
-      const statusBg = workStatus === "สาย" ? "#FDF2F8" : "#D1FAE5";
-      const statusText = workStatus === "สาย" ? `⚠️ สาย ${minutesLate} นาที` : "✓ ตรงเวลา";
-      const statusIcon = workStatus === "สาย" ? "🔴" : "🟢";
+      const headerColor = isCheckIn ? "#0D9608" : "#EF2F14";
+      const headerBg = isCheckIn ? "#E7F8E9" : "#FDEDEC";
 
       const flexMessage = {
         type: "flex",
-        altText: `บันทึกเวลางาน - ${jobInput.value} (${statusText})`,
+        altText: `ลงเวลา - ${jobInput.value}`,
         contents: {
           type: "bubble",
           size: "mega",
-          styles: {
-            body: { separatorLineColor: "#E5E7EB" }
-          },
           hero: {
             type: "image",
             url: imageUrl,
@@ -459,304 +397,84 @@
           body: {
             type: "box",
             layout: "vertical",
-            spacing: "lg",
+            spacing: "md",
             paddingAll: "20px",
             contents: [
-              // ⚠️ Alert Section สำหรับสาย/ตรงเวลา
-              workStatus === "สาย" ? {
+              {
                 type: "box",
-                layout: "vertical",
-                backgroundColor: "#FEE2E2",
-                borderColor: "#DC2626",
-                borderWidth: "2px",
-                cornerRadius: "10px",
-                paddingAll: "14px",
-                paddingStart: "16px",
-                paddingEnd: "16px",
+                layout: "horizontal",
                 contents: [
                   {
+                    type: "text",
+                    text: "ลงเวลาปฎิบัติงาน",
+                    weight: "bold",
+                    size: "lg",
+                    color: "#1E293B",
+                  },
+                  {
                     type: "box",
-                    layout: "horizontal",
-                    spacing: "md",
+                    layout: "vertical",
+                    backgroundColor: headerBg,
+                    cornerRadius: "20px",
+                    paddingAll: "6px",
+                    paddingStart: "12px",
+                    paddingEnd: "12px",
                     contents: [
                       {
                         type: "text",
-                        text: "⚠️",
-                        size: "xl",
-                        flex: 0,
-                      },
-                      {
-                        type: "box",
-                        layout: "vertical",
-                        flex: 5,
-                        contents: [
-                          {
-                            type: "text",
-                            text: "เตือน: เข้างานสาย",
-                            weight: "bold",
-                            size: "sm",
-                            color: "#DC2626",
-                          },
-                          {
-                            type: "text",
-                            text: `สาย ${minutesLate} นาที`,
-                            size: "lg",
-                            weight: "bold",
-                            color: "#991B1B",
-                            margin: "xs",
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              } : {
-                type: "box",
-                layout: "vertical",
-                backgroundColor: "#DCFCE7",
-                borderColor: "#16A34A",
-                borderWidth: "2px",
-                cornerRadius: "10px",
-                paddingAll: "14px",
-                paddingStart: "16px",
-                paddingEnd: "16px",
-                contents: [
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "md",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "✓",
-                        size: "xl",
-                        color: "#16A34A",
-                        flex: 0,
-                      },
-                      {
-                        type: "box",
-                        layout: "vertical",
-                        flex: 5,
-                        contents: [
-                          {
-                            type: "text",
-                            text: "เข้างานตรงเวลา",
-                            weight: "bold",
-                            size: "md",
-                            color: "#16A34A",
-                          },
-                        ],
+                        text: jobInput.value,
+                        size: "sm",
+                        weight: "bold",
+                        color: headerColor,
+                        align: "center",
                       },
                     ],
                   },
                 ],
               },
+              { type: "separator", margin: "md" },
               {
                 type: "box",
                 layout: "vertical",
-                backgroundColor: "#FFF8FC",
-                cornerRadius: "12px",
-                paddingAll: "16px",
-                contents: [
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "md",
-                    contents: [
-                      {
-                        type: "box",
-                        layout: "vertical",
-                        flex: 4,
-                        contents: [
-                          {
-                            type: "text",
-                            text: "บันทึกเวลางาน",
-                            weight: "bold",
-                            size: "xl",
-                            color: "#111827",
-                          },
-                          {
-                            type: "text",
-                            text: getFormattedDate(),
-                            size: "xs",
-                            color: "#9CA3AF",
-                            margin: "xs",
-                          },
-                        ],
-                      },
-                      {
-                        type: "box",
-                        layout: "vertical",
-                        flex: 3,
-                        contents: [
-                          {
-                            type: "box",
-                            layout: "vertical",
-                            backgroundColor: headerBg,
-                            cornerRadius: "8px",
-                            paddingAll: "8px",
-                            paddingStart: "12px",
-                            paddingEnd: "12px",
-                            contents: [
-                              {
-                                type: "text",
-                                text: jobInput.value,
-                                size: "xs",
-                                weight: "bold",
-                                color: headerColor,
-                                align: "center",
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    type: "separator",
-                    margin: "md",
-                    color: "#E5E7EB",
-                  },
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "md",
-                    margin: "md",
-                    contents: [
-                      {
-                        type: "text",
-                        text: statusIcon,
-                        size: "lg",
-                        flex: 0,
-                      },
-                      {
-                        type: "box",
-                        layout: "vertical",
-                        flex: 5,
-                        contents: [
-                          {
-                            type: "text",
-                            text: statusText,
-                            size: "sm",
-                            weight: "bold",
-                            color: statusColor,
-                          },
-                        ],
-                      },
-                      {
-                        type: "box",
-                        layout: "vertical",
-                        flex: 0,
-                        cornerRadius: "20px",
-                        backgroundColor: statusBg,
-                        paddingAll: "4px",
-                        paddingStart: "8px",
-                        paddingEnd: "8px",
-                        contents: [
-                          {
-                            type: "text",
-                            text: statusText.includes("สาย") ? `${minutesLate}'` : "OK",
-                            size: "xs",
-                            weight: "bold",
-                            color: statusColor,
-                            align: "center",
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                type: "box",
-                layout: "vertical",
-                margin: "lg",
+                margin: "md",
                 spacing: "sm",
                 contents: [
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "sm",
-                    contents: [
-                      { type: "text", text: "👤", size: "sm", flex: 0 },
-                      { type: "text", text: "ชื่อ", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
-                      { type: "text", text: columnBData.value, size: "sm", color: "#111827", align: "end", flex: 3, wrap: true },
-                    ],
-                  },
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "sm",
-                    contents: [
-                      { type: "text", text: "🆔", size: "sm", flex: 0 },
-                      { type: "text", text: "รหัส", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
-                      { type: "text", text: columnCData.value, size: "sm", color: "#111827", align: "end", flex: 3 },
-                    ],
-                  },
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "sm",
-                    contents: [
-                      { type: "text", text: "🎓", size: "sm", flex: 0 },
-                      { type: "text", text: "ชั้นปี", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
-                      { type: "text", text: columnDData.value, size: "sm", color: "#111827", align: "end", flex: 3 },
-                    ],
-                  },
+                  flexRow("👤 ชื่อ", columnBData.value),
+                  flexRow("🆔 รหัสนักศึกษา", columnCData.value),
+                  flexRow("🎓 ชั้นปี", columnDData.value),
                 ],
               },
-              { type: "separator", margin: "lg", color: "#E5E7EB" },
+              { type: "separator", margin: "md" },
               {
                 type: "box",
                 layout: "vertical",
-                margin: "lg",
+                margin: "md",
                 spacing: "sm",
                 contents: [
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "sm",
-                    contents: [
-                      { type: "text", text: "📅", size: "sm", flex: 0 },
-                      { type: "text", text: "วันที่", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
-                      { type: "text", text: getFormattedDate(), size: "sm", color: "#111827", align: "end", flex: 3 },
-                    ],
-                  },
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "sm",
-                    contents: [
-                      { type: "text", text: "🕐", size: "sm", flex: 0 },
-                      { type: "text", text: "เวลา", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
-                      { type: "text", text: currentTime.value, size: "sm", weight: "bold", color: "#DB2777", align: "end", flex: 3 },
-                    ],
-                  },
+                  flexRow("📅 วันที่", getFormattedDate()),
+                  flexRow("🕒 เวลา", currentTime.value, "#EF2F14", "xl"),
                 ],
               },
-              { type: "separator", margin: "lg", color: "#E5E7EB" },
+              { type: "separator", margin: "md" },
               {
                 type: "box",
                 layout: "vertical",
-                margin: "lg",
-                spacing: "sm",
+                margin: "md",
+                spacing: "xs",
                 contents: [
                   {
-                    type: "box",
-                    layout: "horizontal",
-                    spacing: "sm",
-                    contents: [
-                      { type: "text", text: "📍", size: "sm", flex: 0 },
-                      { type: "text", text: "สถานที่", weight: "bold", size: "sm", color: "#6B7280", flex: 2 },
-                    ],
+                    type: "text",
+                    text: "📍 สถานที่",
+                    weight: "bold",
+                    size: "sm",
+                    color: "#1E293B",
                   },
                   {
                     type: "text",
                     text: fullAddressInput.value || "ข้อมูลไม่พร้อมแสดง แต่เราเก็บพิกัดของคุณเรียบร้อย",
                     wrap: true,
-                    size: "xs",
-                    color: "#9CA3AF",
-                    margin: "sm",
+                    size: "sm",
+                    color: "#64748B",
                   },
                 ],
               },
@@ -783,60 +501,8 @@
           },
         },
       };
-      try {
-        console.log("📤 Sending Flex Message...");
-        console.log("Message Object:", JSON.stringify(flexMessage, null, 2));
-        
-        await liff.sendMessages([flexMessage]);
-        
-        console.log("✓ Flex Message sent successfully!");
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'บันทึกสำเร็จ',
-          text: 'ข้อมูลถูกส่งไปยัง LINE สำเร็จ',
-          timer: 2000,
-          showConfirmButton: false
-        }).then(() => {
-          liff.closeWindow();
-        });
-        
-      } catch (error) {
-        console.error("❌ Error sending Flex Message:", error);
-        
-        // Fallback: ส่ง Text Message แทน
-        try {
-          const textMessage = {
-            type: "text",
-            text: `✓ บันทึกเวลางาน - ${jobInput.value}\n👤 ชื่อ: ${columnBData.value}\n🆔 รหัส: ${columnCData.value}\n📅 วันที่: ${getFormattedDate()}\n🕐 เวลา: ${currentTime.value}\n🔖 สถานะ: ${workStatus === "สาย" ? "⚠️ สาย " + minutesLate + " นาที" : "✓ ตรงเวลา"}`
-          };
-          
-          await liff.sendMessages([textMessage]);
-          console.log("✓ Text message sent as fallback");
-          
-          Swal.fire({
-            icon: 'success',
-            title: 'บันทึกสำเร็จ',
-            text: 'ข้อมูลถูกบันทึก (ส่งเป็นข้อความ)',
-            timer: 2000,
-            showConfirmButton: false
-          }).then(() => {
-            liff.closeWindow();
-          });
-          
-        } catch (fallbackError) {
-          console.error("❌ Fallback error:", fallbackError);
-          
-          Swal.fire({
-            icon: 'warning',
-            title: 'ข้อมูลบันทึกแล้ว',
-            text: 'แต่ไม่สามารถส่ง LINE ได้ กรุณาลองใหม่',
-            confirmButtonText: 'ปิด'
-          }).then(() => {
-            liff.closeWindow();
-          });
-        }
-      }
+      await liff.sendMessages([flexMessage]);
+      liff.closeWindow();
     }
 
     function updateDateTime() {
