@@ -147,7 +147,19 @@
     // ตั้งค่า jobInput เป็น 'เข้างาน' เมื่อโหลด
     window.onload = async function () {
       document.getElementById("jobInput").value = "เข้างาน";
-      await initializeLiff();
+      try {
+        await initializeLiff();
+      } catch (error) {
+        console.error("❌ Initialization error:", error);
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถเชื่อมต่อได้ กรุณารีโหลดหน้า',
+          confirmButtonText: 'รีโหลด'
+        }).then(() => {
+          location.reload();
+        });
+      }
     };
 
     async function initializeLiff() {
@@ -231,8 +243,22 @@
       let stream;
       let currentFacingMode = "user";
       function startCamera() {
+        // ปิดกล้องที่เปิดอยู่ก่อน
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+        
+        const constraints = {
+          video: {
+            facingMode: currentFacingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        };
+        
         navigator.mediaDevices
-          .getUserMedia({ video: { facingMode: currentFacingMode } })
+          .getUserMedia(constraints)
           .then(function (videoStream) {
             stream = videoStream;
             video.srcObject = videoStream;
@@ -240,10 +266,39 @@
             switchCameraBtn.disabled = false;
             video.style.display = "block";
             previewImage.style.display = "none";
+            console.log("✓ Camera started successfully");
           })
           .catch(function (error) {
-            console.error("Error accessing the camera: ", error);
-            alert("ไม่สามารถเข้าถึงกล้องได้ กรุณาตรวจสอบการอนุญาต.");
+            console.error("Camera Error:", error.name, error.message);
+            
+            let errorMsg = "ไม่สามารถเข้าถึงกล้องได้";
+            if (error.name === "NotReadableError") {
+              errorMsg = "กล้องถูกใช้งานโดยแอปพลิเคชันอื่น กรุณาปิดแอปอื่นที่ใช้กล้องแล้วลองใหม่";
+            } else if (error.name === "NotAllowedError") {
+              errorMsg = "กรุณาอนุญาตให้ใช้กล้อง";
+            } else if (error.name === "NotFoundError") {
+              errorMsg = "ไม่พบอุปกรณ์กล้องบนเครื่องนี้";
+            }
+            
+            alert(errorMsg);
+            
+            // ให้ผู้ใช้ข้ามขั้นตอนนี้ได้
+            Swal.fire({
+              icon: 'warning',
+              title: 'ปัญหากล้อง',
+              text: errorMsg,
+              showCancelButton: true,
+              confirmButtonText: 'ลองใหม่',
+              cancelButtonText: 'ข้าม (ใช้รูปเดิม)'
+            }).then((result) => {
+              if (!result.isConfirmed) {
+                // ใช้รูปเดิม
+                previewImage.src = "https://via.placeholder.com/400x300?text=No+Photo";
+                previewImage.style.display = "block";
+                captureBtn.disabled = true;
+                nextStep();
+              }
+            });
           });
       }
       function capturePhoto() {
@@ -728,8 +783,60 @@
           },
         },
       };
-      await liff.sendMessages([flexMessage]);
-      liff.closeWindow();
+      try {
+        console.log("📤 Sending Flex Message...");
+        console.log("Message Object:", JSON.stringify(flexMessage, null, 2));
+        
+        await liff.sendMessages([flexMessage]);
+        
+        console.log("✓ Flex Message sent successfully!");
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'บันทึกสำเร็จ',
+          text: 'ข้อมูลถูกส่งไปยัง LINE สำเร็จ',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          liff.closeWindow();
+        });
+        
+      } catch (error) {
+        console.error("❌ Error sending Flex Message:", error);
+        
+        // Fallback: ส่ง Text Message แทน
+        try {
+          const textMessage = {
+            type: "text",
+            text: `✓ บันทึกเวลางาน - ${jobInput.value}\n👤 ชื่อ: ${columnBData.value}\n🆔 รหัส: ${columnCData.value}\n📅 วันที่: ${getFormattedDate()}\n🕐 เวลา: ${currentTime.value}\n🔖 สถานะ: ${workStatus === "สาย" ? "⚠️ สาย " + minutesLate + " นาที" : "✓ ตรงเวลา"}`
+          };
+          
+          await liff.sendMessages([textMessage]);
+          console.log("✓ Text message sent as fallback");
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'บันทึกสำเร็จ',
+            text: 'ข้อมูลถูกบันทึก (ส่งเป็นข้อความ)',
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            liff.closeWindow();
+          });
+          
+        } catch (fallbackError) {
+          console.error("❌ Fallback error:", fallbackError);
+          
+          Swal.fire({
+            icon: 'warning',
+            title: 'ข้อมูลบันทึกแล้ว',
+            text: 'แต่ไม่สามารถส่ง LINE ได้ กรุณาลองใหม่',
+            confirmButtonText: 'ปิด'
+          }).then(() => {
+            liff.closeWindow();
+          });
+        }
+      }
     }
 
     function updateDateTime() {
