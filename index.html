@@ -407,6 +407,95 @@
             spacing: "lg",
             paddingAll: "20px",
             contents: [
+              // ⚠️ Alert Section สำหรับสาย/ตรงเวลา
+              workStatus === "สาย" ? {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#FEE2E2",
+                borderColor: "#DC2626",
+                borderWidth: "2px",
+                cornerRadius: "10px",
+                paddingAll: "14px",
+                paddingStart: "16px",
+                paddingEnd: "16px",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "md",
+                    contents: [
+                      {
+                        type: "text",
+                        text: "⚠️",
+                        size: "xl",
+                        flex: 0,
+                      },
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        flex: 5,
+                        contents: [
+                          {
+                            type: "text",
+                            text: "เตือน: เข้างานสาย",
+                            weight: "bold",
+                            size: "sm",
+                            color: "#DC2626",
+                          },
+                          {
+                            type: "text",
+                            text: `สาย ${minutesLate} นาที`,
+                            size: "lg",
+                            weight: "bold",
+                            color: "#991B1B",
+                            margin: "xs",
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              } : {
+                type: "box",
+                layout: "vertical",
+                backgroundColor: "#DCFCE7",
+                borderColor: "#16A34A",
+                borderWidth: "2px",
+                cornerRadius: "10px",
+                paddingAll: "14px",
+                paddingStart: "16px",
+                paddingEnd: "16px",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "md",
+                    contents: [
+                      {
+                        type: "text",
+                        text: "✓",
+                        size: "xl",
+                        color: "#16A34A",
+                        flex: 0,
+                      },
+                      {
+                        type: "box",
+                        layout: "vertical",
+                        flex: 5,
+                        contents: [
+                          {
+                            type: "text",
+                            text: "เข้างานตรงเวลา",
+                            weight: "bold",
+                            size: "md",
+                            color: "#16A34A",
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
               {
                 type: "box",
                 layout: "vertical",
